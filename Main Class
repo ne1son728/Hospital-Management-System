@@ -1,0 +1,127 @@
+MAIN CLASS
+import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        PatientRecordManagement patientRecords = new PatientRecordManagement();
+        AppointmentScheduling appointments = new AppointmentScheduling();
+        DoctorManagement doctors = new DoctorManagement();
+        EmergencyPatientPrioritization emergencyPatients = new EmergencyPatientPrioritization();
+        SearchFunctionality search = new SearchFunctionality();
+
+        // Predefined Departments
+        FixedData fixedData = new FixedData();
+        fixedData.displayDepartments();
+
+        Scanner scanner = new Scanner(System.in);
+        int choice;
+
+        do {
+            System.out.println("\n=== Hospital Management System ===");
+            System.out.println("1. Add Patient");
+            System.out.println("2. View Patients");
+            System.out.println("3. Remove Patient");
+            System.out.println("4. Schedule Appointment");
+            System.out.println("5. View Appointments");
+            System.out.println("6. Add Doctor");
+            System.out.println("7. View Doctors");
+            System.out.println("8. Search Patient by Name");
+            System.out.println("9. Search Doctor by ID");
+            System.out.println("10. Search Appointment by Patient Name");
+            System.out.println("11. Add Emergency Patient");
+            System.out.println("12. View Emergency Patients");
+            System.out.println("13. Serve Next Emergency Patient");
+            System.out.println("0. Exit");
+            System.out.print("Enter your choice: ");
+            choice = scanner.nextInt();
+            scanner.nextLine(); // Consume newline
+
+            switch (choice) {
+                case 1 -> {
+                    System.out.print("Enter Patient Name: ");
+                    String name = scanner.nextLine();
+                    System.out.print("Enter Patient Age: ");
+                    int age = scanner.nextInt();
+                    scanner.nextLine(); // Consume newline
+                    System.out.print("Enter Diagnosis: ");
+                    String diagnosis = scanner.nextLine();
+                    System.out.print("Enter Treatment History: ");
+                    String history = scanner.nextLine();
+                    patientRecords.addPatient(name, age, diagnosis, history);
+                    System.out.println("Patient added successfully.");
+                }
+                case 2 -> patientRecords.displayPatients();
+                case 3 -> {
+                    System.out.print("Enter Patient Name to Remove: ");
+                    String name = scanner.nextLine();
+                    if (patientRecords.removePatient(name)) {
+                        System.out.println("Patient removed successfully.");
+                    } else {
+                        System.out.println("Patient not found.");
+                    }
+                }
+                case 4 -> {
+                    System.out.print("Enter Patient Name to Schedule Appointment: ");
+                    String name = scanner.nextLine();
+                    appointments.scheduleAppointment(name);
+                }
+                case 5 -> appointments.displayAppointments();
+                case 6 -> {
+                    System.out.print("Enter Doctor ID: ");
+                    String id = scanner.nextLine();
+                    System.out.print("Enter Doctor Name: ");
+                    String name = scanner.nextLine();
+                    System.out.print("Enter Specialization: ");
+                    String specialization = scanner.nextLine();
+                    System.out.print("Enter Available Hours: ");
+                    String hours = scanner.nextLine();
+                    doctors.addDoctor(id, name, specialization, hours);
+                    System.out.println("Doctor added successfully.");
+                }
+                case 7 -> doctors.displayDoctors();
+                case 8 -> {
+                    System.out.print("Enter Patient Name to Search: ");
+                    String name = scanner.nextLine();
+                    search.searchPatientByName(patientRecords, name);
+                }
+                case 9 -> {
+                    System.out.print("Enter Doctor ID to Search: ");
+                    String id = scanner.nextLine();
+                    search.searchDoctorById(doctors, id);
+                }
+                case 10 -> {
+                    System.out.print("Enter Patient Name to Search Appointment: ");
+                    String name = scanner.nextLine();
+                    search.searchAppointmentByName(appointments, name);
+                }
+                case 11 -> {
+                    System.out.print("Enter Emergency Patient Name: ");
+                    String name = scanner.nextLine();
+                    System.out.print("Enter Severity (1-10): ");
+                    int severity = scanner.nextInt();
+
+                    // Validate severity
+                    if (severity < 1 || severity > 10) {
+                        System.out.println("Error: Severity must be between 1 and 10.");
+                        break; // Exit the current case without adding the patient
+                    }
+
+                    emergencyPatients.addEmergencyPatient(name, severity);
+                }
+                case 12 -> emergencyPatients.displayEmergencyPatients();
+                case 13 -> {
+                    EmergencyPatientPrioritization.EmergencyPatient next = emergencyPatients.serveNextEmergency();
+                    if (next != null) {
+                        System.out.println("Next Emergency Patient Served: " + next.name);
+                    } else {
+                        System.out.println("No emergency patients in queue.");
+                    }
+                }
+                case 0 -> System.out.println("Have a good day!");
+                default -> System.out.println("Invalid choice. Please try again.");
+            }
+        } while (choice != 0);
+
+        scanner.close();
+    }
+}
