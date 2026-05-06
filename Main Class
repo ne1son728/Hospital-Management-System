@@ -1,127 +1,949 @@
-MAIN CLASS
-import java.util.Scanner;
+import javax.swing.*;
+import javax.swing.border.*;
+import javax.swing.table.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.util.*;
 
-public class Main {
-    public static void main(String[] args) {
-        PatientRecordManagement patientRecords = new PatientRecordManagement();
-        AppointmentScheduling appointments = new AppointmentScheduling();
-        DoctorManagement doctors = new DoctorManagement();
-        EmergencyPatientPrioritization emergencyPatients = new EmergencyPatientPrioritization();
-        SearchFunctionality search = new SearchFunctionality();
+// ─── Data Classes ────────────────────────────────────────────────────────────
 
-        // Predefined Departments
-        FixedData fixedData = new FixedData();
-        fixedData.displayDepartments();
+class Patient {
+    String name, diagnosis, treatmentHistory;
+    int age;
+    Patient next;
+    public Patient(String name, int age, String diagnosis, String treatmentHistory) {
+        this.name = name; this.age = age;
+        this.diagnosis = diagnosis; this.treatmentHistory = treatmentHistory;
+    }
+}
 
-        Scanner scanner = new Scanner(System.in);
-        int choice;
+class PatientRecordManagement {
+    private Patient head;
+    public void addPatient(String name, int age, String diagnosis, String history) {
+        Patient p = new Patient(name, age, diagnosis, history);
+        p.next = head; head = p;
+    }
+    public Patient getPatient(String name) {
+        Patient cur = head;
+        while (cur != null) { if (cur.name.equalsIgnoreCase(name)) return cur; cur = cur.next; }
+        return null;
+    }
+    public boolean removePatient(String name) {
+        if (head == null) return false;
+        if (head.name.equalsIgnoreCase(name)) { head = head.next; return true; }
+        Patient cur = head;
+        while (cur.next != null) {
+            if (cur.next.name.equalsIgnoreCase(name)) { cur.next = cur.next.next; return true; }
+            cur = cur.next;
+        }
+        return false;
+    }
+    public java.util.List<Patient> getAllPatients() {
+        java.util.List<Patient> list = new ArrayList<>();
+        Patient cur = head;
+        while (cur != null) { list.add(cur); cur = cur.next; }
+        return list;
+    }
+}
 
-        do {
-            System.out.println("\n=== Hospital Management System ===");
-            System.out.println("1. Add Patient");
-            System.out.println("2. View Patients");
-            System.out.println("3. Remove Patient");
-            System.out.println("4. Schedule Appointment");
-            System.out.println("5. View Appointments");
-            System.out.println("6. Add Doctor");
-            System.out.println("7. View Doctors");
-            System.out.println("8. Search Patient by Name");
-            System.out.println("9. Search Doctor by ID");
-            System.out.println("10. Search Appointment by Patient Name");
-            System.out.println("11. Add Emergency Patient");
-            System.out.println("12. View Emergency Patients");
-            System.out.println("13. Serve Next Emergency Patient");
-            System.out.println("0. Exit");
-            System.out.print("Enter your choice: ");
-            choice = scanner.nextInt();
-            scanner.nextLine(); // Consume newline
+class Doctor {
+    String id, name, specialization, availableHours, availability;
+    public Doctor(String id, String name, String specialization, String availableHours, String availability) {
+        this.id = id; this.name = name; this.specialization = specialization;
+        this.availableHours = availableHours; this.availability = availability;
+    }
+}
 
-            switch (choice) {
-                case 1 -> {
-                    System.out.print("Enter Patient Name: ");
-                    String name = scanner.nextLine();
-                    System.out.print("Enter Patient Age: ");
-                    int age = scanner.nextInt();
-                    scanner.nextLine(); // Consume newline
-                    System.out.print("Enter Diagnosis: ");
-                    String diagnosis = scanner.nextLine();
-                    System.out.print("Enter Treatment History: ");
-                    String history = scanner.nextLine();
-                    patientRecords.addPatient(name, age, diagnosis, history);
-                    System.out.println("Patient added successfully.");
-                }
-                case 2 -> patientRecords.displayPatients();
-                case 3 -> {
-                    System.out.print("Enter Patient Name to Remove: ");
-                    String name = scanner.nextLine();
-                    if (patientRecords.removePatient(name)) {
-                        System.out.println("Patient removed successfully.");
-                    } else {
-                        System.out.println("Patient not found.");
-                    }
-                }
-                case 4 -> {
-                    System.out.print("Enter Patient Name to Schedule Appointment: ");
-                    String name = scanner.nextLine();
-                    appointments.scheduleAppointment(name);
-                }
-                case 5 -> appointments.displayAppointments();
-                case 6 -> {
-                    System.out.print("Enter Doctor ID: ");
-                    String id = scanner.nextLine();
-                    System.out.print("Enter Doctor Name: ");
-                    String name = scanner.nextLine();
-                    System.out.print("Enter Specialization: ");
-                    String specialization = scanner.nextLine();
-                    System.out.print("Enter Available Hours: ");
-                    String hours = scanner.nextLine();
-                    doctors.addDoctor(id, name, specialization, hours);
-                    System.out.println("Doctor added successfully.");
-                }
-                case 7 -> doctors.displayDoctors();
-                case 8 -> {
-                    System.out.print("Enter Patient Name to Search: ");
-                    String name = scanner.nextLine();
-                    search.searchPatientByName(patientRecords, name);
-                }
-                case 9 -> {
-                    System.out.print("Enter Doctor ID to Search: ");
-                    String id = scanner.nextLine();
-                    search.searchDoctorById(doctors, id);
-                }
-                case 10 -> {
-                    System.out.print("Enter Patient Name to Search Appointment: ");
-                    String name = scanner.nextLine();
-                    search.searchAppointmentByName(appointments, name);
-                }
-                case 11 -> {
-                    System.out.print("Enter Emergency Patient Name: ");
-                    String name = scanner.nextLine();
-                    System.out.print("Enter Severity (1-10): ");
-                    int severity = scanner.nextInt();
+class DoctorManagement {
+    private HashMap<String, Doctor> doctors = new HashMap<>();
+    private static final String[] MONTHS = {"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"};
+    public void addDoctor(String id, String name, String spec, String hours) {
+        Random r = new Random();
+        int s = r.nextInt(MONTHS.length), e = r.nextInt(MONTHS.length - s) + s;
+        doctors.put(id, new Doctor(id, name, spec, hours, MONTHS[s] + "-" + MONTHS[e]));
+    }
+    public Doctor getDoctor(String id) { return doctors.get(id); }
+    public java.util.List<Doctor> getAllDoctors() { return new ArrayList<>(doctors.values()); }
+}
 
-                    // Validate severity
-                    if (severity < 1 || severity > 10) {
-                        System.out.println("Error: Severity must be between 1 and 10.");
-                        break; // Exit the current case without adding the patient
-                    }
+class AppointmentScheduling {
+    private Queue<String> queue = new LinkedList<>();
+    public void schedule(String name) { queue.add(name); }
+    public String serveNext() { return queue.poll(); }
+    public java.util.List<String> getAll() { return new ArrayList<>(queue); }
+    public boolean contains(String name) { return queue.contains(name); }
+}
 
-                    emergencyPatients.addEmergencyPatient(name, severity);
-                }
-                case 12 -> emergencyPatients.displayEmergencyPatients();
-                case 13 -> {
-                    EmergencyPatientPrioritization.EmergencyPatient next = emergencyPatients.serveNextEmergency();
-                    if (next != null) {
-                        System.out.println("Next Emergency Patient Served: " + next.name);
-                    } else {
-                        System.out.println("No emergency patients in queue.");
-                    }
-                }
-                case 0 -> System.out.println("Have a good day!");
-                default -> System.out.println("Invalid choice. Please try again.");
+class EmergencyPatientPrioritization {
+    static class EP { String name; int severity;
+        EP(String n, int s) { name = n; severity = s; } }
+    private PriorityQueue<EP> pq = new PriorityQueue<>(Comparator.comparingInt(e -> -e.severity));
+    public void add(String name, int severity) { pq.add(new EP(name, severity)); }
+    public EP serveNext() { return pq.poll(); }
+    public java.util.List<EP> getAll() { return new ArrayList<>(pq); }
+}
+
+// ─── Main GUI ────────────────────────────────────────────────────────────────
+
+public class HospitalManagementGUI extends JFrame {
+
+    // Data
+    PatientRecordManagement patientRecords = new PatientRecordManagement();
+    DoctorManagement doctorMgmt = new DoctorManagement();
+    AppointmentScheduling appointments = new AppointmentScheduling();
+    EmergencyPatientPrioritization emergency = new EmergencyPatientPrioritization();
+
+    // Colors — Light Blue / White / Orange theme
+    static final Color BG       = new Color(240, 247, 255);
+    static final Color SIDEBAR  = new Color(255, 255, 255);
+    static final Color CARD     = new Color(255, 255, 255);
+    static final Color ACCENT   = new Color(0, 120, 212);
+    static final Color ACCENT2  = new Color(255, 140, 0);
+    static final Color DANGER   = new Color(209, 52, 56);
+    static final Color WARNING  = new Color(255, 140, 0);
+    static final Color TEXT     = new Color(23, 42, 69);
+    static final Color SUBTEXT  = new Color(90, 120, 155);
+    static final Color BORDER   = new Color(194, 220, 245);
+
+    JPanel contentPanel;
+    CardLayout cardLayout;
+    JLabel statusLabel;
+
+    // Tables
+    DefaultTableModel patientModel, doctorModel, appointmentModel, emergencyModel;
+
+    // Dashboard stat labels
+    JLabel statPatients, statDoctors, statAppointments, statEmergency;
+
+    public HospitalManagementGUI() {
+        setTitle("Hospital Management System");
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setSize(1100, 700);
+        setMinimumSize(new Dimension(900, 600));
+        setLocationRelativeTo(null);
+
+        // Seed some demo data
+        seedData();
+
+        setLayout(new BorderLayout());
+        getContentPane().setBackground(BG);
+
+        add(buildSidebar(), BorderLayout.WEST);
+
+        cardLayout = new CardLayout();
+        contentPanel = new JPanel(cardLayout);
+        contentPanel.setBackground(BG);
+        contentPanel.add(buildDashboard(), "dashboard");
+        contentPanel.add(buildPatientsPanel(), "patients");
+        contentPanel.add(buildDoctorsPanel(), "doctors");
+        contentPanel.add(buildAppointmentsPanel(), "appointments");
+        contentPanel.add(buildEmergencyPanel(), "emergency");
+        add(contentPanel, BorderLayout.CENTER);
+
+        add(buildStatusBar(), BorderLayout.SOUTH);
+
+        setVisible(true);
+        showPage("dashboard");
+    }
+
+    void seedData() {
+        patientRecords.addPatient("Alice Johnson", 34, "Hypertension", "Beta-blockers");
+        patientRecords.addPatient("Bob Smith", 55, "Diabetes Type 2", "Metformin");
+        patientRecords.addPatient("Carol White", 28, "Asthma", "Inhaler therapy");
+        doctorMgmt.addDoctor("D001", "Dr. Emily Chen", "Cardiology", "9AM-5PM");
+        doctorMgmt.addDoctor("D002", "Dr. James Patel", "Neurology", "10AM-6PM");
+        doctorMgmt.addDoctor("D003", "Dr. Sarah Kim", "Oncology", "8AM-4PM");
+        appointments.schedule("Alice Johnson");
+        appointments.schedule("Bob Smith");
+        emergency.add("Carol White", 8);
+        emergency.add("John Doe", 5);
+    }
+
+    // ── Sidebar ───────────────────────────────────────────────────────────────
+
+    JPanel buildSidebar() {
+        JPanel sidebar = new JPanel();
+        sidebar.setBackground(SIDEBAR);
+        sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
+        sidebar.setPreferredSize(new Dimension(220, 0));
+        sidebar.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, BORDER));
+
+        // Logo
+        JPanel logo = new JPanel(new BorderLayout());
+        logo.setBackground(SIDEBAR);
+        logo.setBorder(new EmptyBorder(24, 20, 20, 20));
+        JLabel title = new JLabel("🏥 Hospital MS");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        title.setForeground(TEXT);
+        logo.add(title);
+        sidebar.add(logo);
+
+        JSeparator sep = new JSeparator();
+        sep.setForeground(BORDER);
+        sep.setBackground(BORDER);
+        sidebar.add(sep);
+        sidebar.add(Box.createVerticalStrut(12));
+
+        String[][] navItems = {
+            {"dashboard",    "📊", "Dashboard"},
+            {"patients",     "🧑‍⚕️", "Patients"},
+            {"doctors",      "👨‍⚕️", "Doctors"},
+            {"appointments", "📅", "Appointments"},
+            {"emergency",    "🚨", "Emergency"},
+        };
+
+        for (String[] item : navItems) {
+            sidebar.add(buildNavButton(item[0], item[1] + "  " + item[2]));
+        }
+
+        sidebar.add(Box.createVerticalGlue());
+
+        String[] depts = {"Cardiology","Neurology","Oncology","Pediatrics","Orthopedics","General Surgery","Dermatology"};
+        JPanel deptBox = new JPanel();
+        deptBox.setBackground(CARD);
+        deptBox.setLayout(new BoxLayout(deptBox, BoxLayout.Y_AXIS));
+        deptBox.setBorder(new EmptyBorder(12, 12, 12, 12));
+        JLabel deptTitle = new JLabel("Departments");
+        deptTitle.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        deptTitle.setForeground(SUBTEXT);
+        deptTitle.setAlignmentX(LEFT_ALIGNMENT);
+        deptBox.add(deptTitle);
+        deptBox.add(Box.createVerticalStrut(6));
+        for (String d : depts) {
+            JLabel l = new JLabel("• " + d);
+            l.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+            l.setForeground(SUBTEXT);
+            l.setAlignmentX(LEFT_ALIGNMENT);
+            deptBox.add(l);
+        }
+        JPanel deptWrap = new JPanel(new BorderLayout());
+        deptWrap.setBackground(SIDEBAR);
+        deptWrap.setBorder(new EmptyBorder(0, 12, 16, 12));
+        deptWrap.add(deptBox);
+        sidebar.add(deptWrap);
+
+        return sidebar;
+    }
+
+    JButton buildNavButton(String page, String label) {
+        JButton btn = new JButton(label);
+        btn.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        btn.setForeground(SUBTEXT);
+        btn.setBackground(SIDEBAR);
+        btn.setBorder(new EmptyBorder(10, 20, 10, 20));
+        btn.setHorizontalAlignment(SwingConstants.LEFT);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setFocusPainted(false);
+        btn.setMaximumSize(new Dimension(220, 40));
+        btn.addActionListener(e -> showPage(page));
+        btn.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) { btn.setForeground(TEXT); btn.setBackground(CARD); }
+            public void mouseExited(MouseEvent e)  { btn.setForeground(SUBTEXT); btn.setBackground(SIDEBAR); }
+        });
+        return btn;
+    }
+
+    // ── Status bar ────────────────────────────────────────────────────────────
+
+    JPanel buildStatusBar() {
+        JPanel bar = new JPanel(new BorderLayout());
+        bar.setBackground(SIDEBAR);
+        bar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, BORDER));
+        statusLabel = new JLabel("  Ready");
+        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setForeground(SUBTEXT);
+        statusLabel.setBorder(new EmptyBorder(6, 10, 6, 10));
+        bar.add(statusLabel, BorderLayout.WEST);
+        return bar;
+    }
+
+    void status(String msg) { statusLabel.setText("  " + msg); }
+
+    // ── Dashboard ─────────────────────────────────────────────────────────────
+
+    JPanel buildDashboard() {
+        JPanel p = new JPanel(new BorderLayout());
+        p.setBackground(BG);
+        p.setBorder(new EmptyBorder(28, 28, 28, 28));
+
+        JLabel header = new JLabel("Dashboard");
+        header.setFont(new Font("Segoe UI", Font.BOLD, 24));
+        header.setForeground(TEXT);
+        header.setBorder(new EmptyBorder(0, 0, 20, 0));
+        p.add(header, BorderLayout.NORTH);
+
+        JPanel cards = new JPanel(new GridLayout(1, 4, 16, 0));
+        cards.setBackground(BG);
+
+        statPatients     = new JLabel("0");
+        statDoctors      = new JLabel("0");
+        statAppointments = new JLabel("0");
+        statEmergency    = new JLabel("0");
+
+        cards.add(statCard("Patients",     statPatients,     ACCENT,  "🧑‍⚕️"));
+        cards.add(statCard("Doctors",      statDoctors,      ACCENT2, "👨‍⚕️"));
+        cards.add(statCard("Appointments", statAppointments, WARNING, "📅"));
+        cards.add(statCard("Emergency",    statEmergency,    DANGER,  "🚨"));
+        p.add(cards, BorderLayout.CENTER);
+
+        JLabel hint = new JLabel("Use the sidebar to navigate between sections.");
+        hint.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        hint.setForeground(SUBTEXT);
+        hint.setBorder(new EmptyBorder(20, 0, 0, 0));
+        p.add(hint, BorderLayout.SOUTH);
+
+        return p;
+    }
+
+    void refreshDashboard() {
+        if (statPatients == null) return;
+        statPatients.setText(String.valueOf(patientRecords.getAllPatients().size()));
+        statDoctors.setText(String.valueOf(doctorMgmt.getAllDoctors().size()));
+        statAppointments.setText(String.valueOf(appointments.getAll().size()));
+        statEmergency.setText(String.valueOf(emergency.getAll().size()));
+    }
+
+    JPanel statCard(String label, JLabel valueLbl, Color accent, String icon) {
+        JPanel card = new JPanel();
+        card.setBackground(CARD);
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1, true),
+            new EmptyBorder(20, 20, 20, 20)));
+
+        JLabel ico = new JLabel(icon);
+        ico.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 28));
+        ico.setAlignmentX(LEFT_ALIGNMENT);
+
+        valueLbl.setFont(new Font("Segoe UI", Font.BOLD, 36));
+        valueLbl.setForeground(accent);
+        valueLbl.setAlignmentX(LEFT_ALIGNMENT);
+
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        lbl.setForeground(SUBTEXT);
+        lbl.setAlignmentX(LEFT_ALIGNMENT);
+
+        card.add(ico);
+        card.add(Box.createVerticalStrut(8));
+        card.add(valueLbl);
+        card.add(lbl);
+        return card;
+    }
+
+    // ── Patients ──────────────────────────────────────────────────────────────
+
+    JPanel buildPatientsPanel() {
+        JPanel p = new JPanel(new BorderLayout(0, 16));
+        p.setBackground(BG);
+        p.setBorder(new EmptyBorder(28, 28, 28, 28));
+
+        JLabel header = new JLabel("Patient Records");
+        header.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        header.setForeground(TEXT);
+        p.add(header, BorderLayout.NORTH);
+
+        // Table
+        String[] cols = {"Name", "Age", "Diagnosis", "Treatment History"};
+        patientModel = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        JTable table = styledTable(patientModel);
+        refreshPatients();
+        JScrollPane scroll = styledScroll(table);
+
+        // Form
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(CARD);
+        form.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER), new EmptyBorder(16, 16, 16, 16)));
+        GridBagConstraints g = new GridBagConstraints();
+        g.insets = new Insets(4, 4, 4, 4); g.fill = GridBagConstraints.HORIZONTAL;
+
+        JTextField tfName = field(), tfAge = field(), tfDiag = field(), tfHist = field();
+
+        g.gridx=0; g.gridy=0; form.add(label("Name:"), g);
+        g.gridx=1; form.add(tfName, g);
+        g.gridx=2; form.add(label("Age:"), g);
+        g.gridx=3; form.add(tfAge, g);
+        g.gridx=0; g.gridy=1; form.add(label("Diagnosis:"), g);
+        g.gridx=1; form.add(tfDiag, g);
+        g.gridx=2; form.add(label("Treatment History:"), g);
+        g.gridx=3; form.add(tfHist, g);
+
+        JButton btnAdd = accentBtn("Add Patient", ACCENT2);
+        JButton btnRemove = accentBtn("Remove Selected", DANGER);
+        JButton btnSearch = accentBtn("Search by Name", ACCENT);
+
+        btnAdd.addActionListener(e -> {
+            try {
+                String nm = tfName.getText().trim();
+                int age = Integer.parseInt(tfAge.getText().trim());
+                String diag = tfDiag.getText().trim(), hist = tfHist.getText().trim();
+                if (nm.isEmpty()) { status("Enter a patient name."); return; }
+                patientRecords.addPatient(nm, age, diag, hist);
+                refreshPatients();
+                refreshDashboard();
+                tfName.setText(""); tfAge.setText(""); tfDiag.setText(""); tfHist.setText("");
+                status("Patient '" + nm + "' added.");
+            } catch (NumberFormatException ex) { status("Age must be a number."); }
+        });
+
+        btnRemove.addActionListener(e -> {
+            int row = table.getSelectedRow();
+            if (row < 0) { status("Select a patient to remove."); return; }
+            String nm = (String) patientModel.getValueAt(row, 0);
+            if (patientRecords.removePatient(nm)) { refreshPatients(); refreshDashboard(); status("Patient '" + nm + "' removed."); }
+        });
+
+        btnSearch.addActionListener(e -> {
+            String nm = JOptionPane.showInputDialog(this, "Enter patient name:", "Search", JOptionPane.PLAIN_MESSAGE);
+            if (nm == null) return;
+            Patient pt = patientRecords.getPatient(nm.trim());
+            if (pt != null)
+                JOptionPane.showMessageDialog(this,
+                    "Name: " + pt.name + "\nAge: " + pt.age + "\nDiagnosis: " + pt.diagnosis + "\nHistory: " + pt.treatmentHistory,
+                    "Patient Found", JOptionPane.INFORMATION_MESSAGE);
+            else JOptionPane.showMessageDialog(this, "Patient not found.", "Not Found", JOptionPane.WARNING_MESSAGE);
+        });
+
+        g.gridx=0; g.gridy=2; form.add(btnAdd, g);
+        g.gridx=1; form.add(btnRemove, g);
+        g.gridx=2; g.gridwidth=2; form.add(btnSearch, g);
+
+        p.add(scroll, BorderLayout.CENTER);
+        p.add(form, BorderLayout.SOUTH);
+        return p;
+    }
+
+    void refreshPatients() {
+        patientModel.setRowCount(0);
+        for (Patient pt : patientRecords.getAllPatients())
+            patientModel.addRow(new Object[]{pt.name, pt.age, pt.diagnosis, pt.treatmentHistory});
+    }
+
+    // ── Doctors ───────────────────────────────────────────────────────────────
+
+    JPanel buildDoctorsPanel() {
+        JPanel p = new JPanel(new BorderLayout(0, 16));
+        p.setBackground(BG);
+        p.setBorder(new EmptyBorder(28, 28, 28, 28));
+
+        JLabel header = new JLabel("Doctor Records");
+        header.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        header.setForeground(TEXT);
+        p.add(header, BorderLayout.NORTH);
+
+        String[] cols = {"ID", "Name", "Specialization", "Available Hours", "Availability"};
+        doctorModel = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        JTable table = styledTable(doctorModel);
+        refreshDoctors();
+
+        JPanel form = new JPanel(new GridBagLayout());
+        form.setBackground(CARD);
+        form.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER), new EmptyBorder(16, 16, 16, 16)));
+        GridBagConstraints g = new GridBagConstraints();
+        g.insets = new Insets(4, 4, 4, 4); g.fill = GridBagConstraints.HORIZONTAL;
+
+        JTextField tfId = field(), tfName = field(), tfSpec = field(), tfHours = field();
+
+        g.gridx=0; g.gridy=0; form.add(label("Doctor ID:"), g);
+        g.gridx=1; form.add(tfId, g);
+        g.gridx=2; form.add(label("Name:"), g);
+        g.gridx=3; form.add(tfName, g);
+        g.gridx=0; g.gridy=1; form.add(label("Specialization:"), g);
+        g.gridx=1; form.add(tfSpec, g);
+        g.gridx=2; form.add(label("Available Hours:"), g);
+        g.gridx=3; form.add(tfHours, g);
+
+        JButton btnAdd = accentBtn("Add Doctor", ACCENT2);
+        JButton btnSearch = accentBtn("Search by ID", ACCENT);
+
+        btnAdd.addActionListener(e -> {
+            String id = tfId.getText().trim(), nm = tfName.getText().trim(),
+                   sp = tfSpec.getText().trim(), hr = tfHours.getText().trim();
+            if (id.isEmpty() || nm.isEmpty()) { status("ID and Name are required."); return; }
+            doctorMgmt.addDoctor(id, nm, sp, hr);
+            refreshDoctors();
+            refreshDashboard();
+            tfId.setText(""); tfName.setText(""); tfSpec.setText(""); tfHours.setText("");
+            status("Doctor '" + nm + "' added.");
+        });
+
+        btnSearch.addActionListener(e -> {
+            String id = JOptionPane.showInputDialog(this, "Enter doctor ID:", "Search", JOptionPane.PLAIN_MESSAGE);
+            if (id == null) return;
+            Doctor doc = doctorMgmt.getDoctor(id.trim());
+            if (doc != null)
+                JOptionPane.showMessageDialog(this,
+                    "ID: " + doc.id + "\nName: " + doc.name + "\nSpecialization: " + doc.specialization +
+                    "\nHours: " + doc.availableHours + "\nAvailability: " + doc.availability,
+                    "Doctor Found", JOptionPane.INFORMATION_MESSAGE);
+            else JOptionPane.showMessageDialog(this, "Doctor not found.", "Not Found", JOptionPane.WARNING_MESSAGE);
+        });
+
+        g.gridx=0; g.gridy=2; form.add(btnAdd, g);
+        g.gridx=1; g.gridwidth=2; form.add(btnSearch, g);
+
+        p.add(styledScroll(table), BorderLayout.CENTER);
+        p.add(form, BorderLayout.SOUTH);
+        return p;
+    }
+
+    void refreshDoctors() {
+        doctorModel.setRowCount(0);
+        for (Doctor d : doctorMgmt.getAllDoctors())
+            doctorModel.addRow(new Object[]{d.id, d.name, d.specialization, d.availableHours, d.availability});
+    }
+
+    // ── Appointments ──────────────────────────────────────────────────────────
+
+    JPanel buildAppointmentsPanel() {
+        JPanel p = new JPanel(new BorderLayout(0, 16));
+        p.setBackground(BG);
+        p.setBorder(new EmptyBorder(28, 28, 28, 28));
+
+        JLabel header = new JLabel("Appointment Scheduling");
+        header.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        header.setForeground(TEXT);
+        p.add(header, BorderLayout.NORTH);
+
+        String[] cols = {"#", "Patient Name"};
+        appointmentModel = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        JTable table = styledTable(appointmentModel);
+        refreshAppointments();
+
+        JPanel form = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
+        form.setBackground(CARD);
+        form.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER), new EmptyBorder(8, 8, 8, 8)));
+
+        JTextField tfName = field();
+        tfName.setPreferredSize(new Dimension(200, 32));
+        JButton btnAdd = accentBtn("Schedule Appointment", ACCENT2);
+        JButton btnServe = accentBtn("Serve Next", ACCENT);
+        JButton btnSearch = accentBtn("Search", WARNING);
+
+        btnAdd.addActionListener(e -> {
+            String nm = tfName.getText().trim();
+            if (nm.isEmpty()) { status("Enter patient name."); return; }
+            appointments.schedule(nm);
+            refreshAppointments();
+            refreshDashboard();
+            tfName.setText("");
+            status("Appointment scheduled for " + nm);
+        });
+
+        btnServe.addActionListener(e -> {
+            String next = appointments.serveNext();
+            if (next != null) { refreshAppointments(); refreshDashboard(); status("Served: " + next); JOptionPane.showMessageDialog(this, "Now serving: " + next, "Next Patient", JOptionPane.INFORMATION_MESSAGE); }
+            else status("No appointments in queue.");
+        });
+
+        btnSearch.addActionListener(e -> {
+            String nm = JOptionPane.showInputDialog(this, "Enter patient name:", "Search Appointment", JOptionPane.PLAIN_MESSAGE);
+            if (nm == null) return;
+            boolean found = appointments.contains(nm.trim());
+            JOptionPane.showMessageDialog(this, found ? "✅ Appointment found for: " + nm : "❌ No appointment found for: " + nm,
+                "Search Result", found ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
+        });
+
+        form.add(label("Patient Name:")); form.add(tfName);
+        form.add(btnAdd); form.add(btnServe); form.add(btnSearch);
+
+        p.add(styledScroll(table), BorderLayout.CENTER);
+        p.add(form, BorderLayout.SOUTH);
+        return p;
+    }
+
+    void refreshAppointments() {
+        appointmentModel.setRowCount(0);
+        java.util.List<String> list = appointments.getAll();
+        for (int i = 0; i < list.size(); i++)
+            appointmentModel.addRow(new Object[]{i + 1, list.get(i)});
+    }
+
+    // ── Emergency ─────────────────────────────────────────────────────────────
+
+    JPanel buildEmergencyPanel() {
+        JPanel p = new JPanel(new BorderLayout(0, 16));
+        p.setBackground(BG);
+        p.setBorder(new EmptyBorder(28, 28, 28, 28));
+
+        JLabel header = new JLabel("Emergency Patient Prioritization");
+        header.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        header.setForeground(TEXT);
+        p.add(header, BorderLayout.NORTH);
+
+        String[] cols = {"Patient Name", "Severity (1-10)"};
+        emergencyModel = new DefaultTableModel(cols, 0) { public boolean isCellEditable(int r, int c) { return false; } };
+        JTable table = styledTable(emergencyModel);
+        // Color severity column
+        table.getColumnModel().getColumn(1).setCellRenderer(new DefaultTableCellRenderer() {
+            public Component getTableCellRendererComponent(JTable t, Object v, boolean sel, boolean foc, int row, int col) {
+                super.getTableCellRendererComponent(t, v, sel, foc, row, col);
+                setHorizontalAlignment(CENTER);
+                int sev = (Integer) v;
+                setForeground(sev >= 8 ? DANGER : sev >= 5 ? WARNING : ACCENT2);
+                setBackground(sel ? ACCENT : CARD);
+                return this;
             }
-        } while (choice != 0);
+        });
+        refreshEmergency();
 
-        scanner.close();
+        JPanel form = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 8));
+        form.setBackground(CARD);
+        form.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER), new EmptyBorder(8, 8, 8, 8)));
+
+        JTextField tfName = field();
+        tfName.setPreferredSize(new Dimension(180, 32));
+        JSpinner spSeverity = new JSpinner(new SpinnerNumberModel(5, 1, 10, 1));
+        spSeverity.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        ((JSpinner.DefaultEditor) spSeverity.getEditor()).getTextField().setBackground(new Color(240, 247, 255));
+        ((JSpinner.DefaultEditor) spSeverity.getEditor()).getTextField().setForeground(TEXT);
+        JButton btnAdd = accentBtn("Add Emergency Patient", DANGER);
+        JButton btnServe = accentBtn("Serve Highest Priority", ACCENT);
+
+        btnAdd.addActionListener(e -> {
+            String nm = tfName.getText().trim();
+            int sev = (Integer) spSeverity.getValue();
+            if (nm.isEmpty()) { status("Enter patient name."); return; }
+            emergency.add(nm, sev);
+            refreshEmergency();
+            refreshDashboard();
+            tfName.setText("");
+            status("Emergency patient '" + nm + "' added with severity " + sev);
+        });
+
+        btnServe.addActionListener(e -> {
+            EmergencyPatientPrioritization.EP next = emergency.serveNext();
+            if (next != null) { refreshEmergency(); refreshDashboard(); status("Served emergency patient: " + next.name);
+                JOptionPane.showMessageDialog(this, "Serving: " + next.name + "\nSeverity: " + next.severity, "Emergency Served", JOptionPane.WARNING_MESSAGE); }
+            else status("No emergency patients.");
+        });
+
+        form.add(label("Patient Name:")); form.add(tfName);
+        form.add(label("Severity:")); form.add(spSeverity);
+        form.add(btnAdd); form.add(btnServe);
+
+        p.add(styledScroll(table), BorderLayout.CENTER);
+        p.add(form, BorderLayout.SOUTH);
+        return p;
+    }
+
+    void refreshEmergency() {
+        emergencyModel.setRowCount(0);
+        for (EmergencyPatientPrioritization.EP ep : emergency.getAll())
+            emergencyModel.addRow(new Object[]{ep.name, ep.severity});
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    void showPage(String name) { cardLayout.show(contentPanel, name); if (name.equals("dashboard")) refreshDashboard(); }
+
+    JTable styledTable(DefaultTableModel model) {
+        JTable table = new JTable(model);
+        table.setBackground(CARD);
+        table.setForeground(TEXT);
+        table.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        table.setRowHeight(30);
+        table.setShowGrid(false);
+        table.setIntercellSpacing(new Dimension(0, 0));
+        table.setSelectionBackground(ACCENT);
+        table.setSelectionForeground(Color.WHITE);
+        table.getTableHeader().setBackground(SIDEBAR);
+        table.getTableHeader().setForeground(SUBTEXT);
+        table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        table.getTableHeader().setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, BORDER));
+        // Alternating rows
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            public Component getTableCellRendererComponent(JTable t, Object v, boolean sel, boolean foc, int row, int col) {
+                super.getTableCellRendererComponent(t, v, sel, foc, row, col);
+                setBorder(new EmptyBorder(0, 12, 0, 12));
+                if (sel) { setBackground(ACCENT); setForeground(Color.WHITE); }
+                else { setBackground(row % 2 == 0 ? CARD : new Color(224, 238, 252)); setForeground(TEXT); }
+                return this;
+            }
+        });
+        return table;
+    }
+
+    JScrollPane styledScroll(JTable table) {
+        JScrollPane scroll = new JScrollPane(table);
+        scroll.setBackground(CARD);
+        scroll.getViewport().setBackground(CARD);
+        scroll.setBorder(BorderFactory.createLineBorder(BORDER));
+        return scroll;
+    }
+
+    JTextField field() {
+        JTextField tf = new JTextField(14);
+        tf.setBackground(new Color(240, 247, 255));
+        tf.setForeground(TEXT);
+        tf.setCaretColor(TEXT);
+        tf.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        tf.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER), new EmptyBorder(4, 8, 4, 8)));
+        return tf;
+    }
+
+    JLabel label(String text) {
+        JLabel l = new JLabel(text);
+        l.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        l.setForeground(SUBTEXT);
+        return l;
+    }
+
+    JButton accentBtn(String text, Color color) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btn.setBackground(color);
+        btn.setForeground(Color.WHITE);
+        btn.setBorder(new EmptyBorder(8, 16, 8, 16));
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) { btn.setBackground(color.darker()); }
+            public void mouseExited(MouseEvent e)  { btn.setBackground(color); }
+        });
+        return btn;
+    }
+
+    public static void main(String[] args) {
+        try { UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName()); }
+        catch (Exception ignored) {}
+        SwingUtilities.invokeLater(LoginScreen::new);
+    }
+}
+
+// ─── Login Screen ─────────────────────────────────────────────────────────────
+
+class LoginScreen extends JFrame {
+
+    static final Color BG      = new Color(240, 247, 255);
+    static final Color CARD    = new Color(255, 255, 255);
+    static final Color BORDER  = new Color(194, 220, 245);
+    static final Color ACCENT  = new Color(0, 120, 212);
+    static final Color DANGER  = new Color(209, 52, 56);
+    static final Color TEXT    = new Color(23, 42, 69);
+    static final Color SUBTEXT = new Color(90, 120, 155);
+
+    JTextField usernameField;
+    JPasswordField passwordField;
+    JLabel errorLabel;
+    JLabel charCountLabel;
+
+    // Stored credentials (username max 7 chars, password needs at least 1 capital)
+    static final String ADMIN_USER = "Admin";
+    static final String ADMIN_PASS = "Admin123";
+
+    public LoginScreen() {
+        setTitle("Hospital Management System — Login");
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setSize(460, 540);
+        setResizable(false);
+        setLocationRelativeTo(null);
+        getContentPane().setBackground(BG);
+        setLayout(new GridBagLayout());
+
+        add(buildLoginCard());
+        setVisible(true);
+    }
+
+    JPanel buildLoginCard() {
+        JPanel card = new JPanel();
+        card.setBackground(CARD);
+        card.setLayout(new BoxLayout(card, BoxLayout.Y_AXIS));
+        card.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER, 1, true),
+            new EmptyBorder(40, 40, 40, 40)));
+        card.setPreferredSize(new Dimension(360, 420));
+
+        // Icon + Title
+        JLabel icon = new JLabel("🏥", SwingConstants.CENTER);
+        icon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 48));
+        icon.setAlignmentX(CENTER_ALIGNMENT);
+
+        JLabel title = new JLabel("Hospital MS", SwingConstants.CENTER);
+        title.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        title.setForeground(TEXT);
+        title.setAlignmentX(CENTER_ALIGNMENT);
+
+        JLabel subtitle = new JLabel("Admin Login", SwingConstants.CENTER);
+        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        subtitle.setForeground(SUBTEXT);
+        subtitle.setAlignmentX(CENTER_ALIGNMENT);
+
+        // Username field
+        JLabel userLabel = new JLabel("Username");
+        userLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        userLabel.setForeground(SUBTEXT);
+        userLabel.setAlignmentX(LEFT_ALIGNMENT);
+
+        JPanel userRow = new JPanel(new BorderLayout(6, 0));
+        userRow.setBackground(CARD);
+        userRow.setMaximumSize(new Dimension(280, 38));
+        userRow.setAlignmentX(LEFT_ALIGNMENT);
+
+        usernameField = new JTextField();
+        styleField(usernameField);
+
+        charCountLabel = new JLabel("0/7");
+        charCountLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        charCountLabel.setForeground(SUBTEXT);
+        charCountLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+        charCountLabel.setPreferredSize(new Dimension(30, 20));
+
+        // Enforce max 7 characters and update counter
+        usernameField.addKeyListener(new KeyAdapter() {
+            public void keyTyped(KeyEvent e) {
+                if (usernameField.getText().length() >= 7) e.consume();
+            }
+            public void keyReleased(KeyEvent e) {
+                int len = usernameField.getText().length();
+                charCountLabel.setText(len + "/7");
+                charCountLabel.setForeground(len >= 7 ? DANGER : SUBTEXT);
+            }
+        });
+
+        userRow.add(usernameField, BorderLayout.CENTER);
+        userRow.add(charCountLabel, BorderLayout.EAST);
+
+        // Password field
+        JLabel passLabel = new JLabel("Password  (must contain at least 1 capital letter)");
+        passLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        passLabel.setForeground(SUBTEXT);
+        passLabel.setAlignmentX(LEFT_ALIGNMENT);
+
+        passwordField = new JPasswordField();
+        styleField(passwordField);
+        passwordField.setMaximumSize(new Dimension(280, 38));
+        passwordField.setAlignmentX(LEFT_ALIGNMENT);
+
+        // Show/hide password toggle
+        JCheckBox showPass = new JCheckBox("Show password");
+        showPass.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        showPass.setForeground(SUBTEXT);
+        showPass.setBackground(CARD);
+        showPass.setFocusPainted(false);
+        showPass.setAlignmentX(LEFT_ALIGNMENT);
+        showPass.addActionListener(e ->
+            passwordField.setEchoChar(showPass.isSelected() ? (char) 0 : '●'));
+
+        // Error label
+        errorLabel = new JLabel(" ");
+        errorLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        errorLabel.setForeground(DANGER);
+        errorLabel.setAlignmentX(CENTER_ALIGNMENT);
+
+        // Login button
+        JButton loginBtn = new JButton("Login");
+        loginBtn.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        loginBtn.setBackground(ACCENT);
+        loginBtn.setForeground(Color.WHITE);
+        loginBtn.setBorder(new EmptyBorder(10, 0, 10, 0));
+        loginBtn.setFocusPainted(false);
+        loginBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        loginBtn.setMaximumSize(new Dimension(280, 44));
+        loginBtn.setAlignmentX(CENTER_ALIGNMENT);
+        loginBtn.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e) { loginBtn.setBackground(ACCENT.darker()); }
+            public void mouseExited(MouseEvent e)  { loginBtn.setBackground(ACCENT); }
+        });
+        loginBtn.addActionListener(e -> attemptLogin());
+
+        // Allow Enter key to submit
+        passwordField.addActionListener(e -> attemptLogin());
+        usernameField.addActionListener(e -> passwordField.requestFocus());
+
+        // Hint label
+        JLabel hint = new JLabel("Default: " + ADMIN_USER + " / " + ADMIN_PASS, SwingConstants.CENTER);
+        hint.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        hint.setForeground(new Color(160, 190, 220));
+        hint.setAlignmentX(CENTER_ALIGNMENT);
+
+        // Assemble
+        card.add(icon);
+        card.add(Box.createVerticalStrut(8));
+        card.add(title);
+        card.add(Box.createVerticalStrut(4));
+        card.add(subtitle);
+        card.add(Box.createVerticalStrut(28));
+        card.add(userLabel);
+        card.add(Box.createVerticalStrut(4));
+        card.add(userRow);
+        card.add(Box.createVerticalStrut(16));
+        card.add(passLabel);
+        card.add(Box.createVerticalStrut(4));
+        card.add(passwordField);
+        card.add(Box.createVerticalStrut(6));
+        card.add(showPass);
+        card.add(Box.createVerticalStrut(12));
+        card.add(errorLabel);
+        card.add(Box.createVerticalStrut(8));
+        card.add(loginBtn);
+        card.add(Box.createVerticalStrut(12));
+        card.add(hint);
+
+        return card;
+    }
+
+    void styleField(JTextField field) {
+        field.setBackground(new Color(240, 247, 255));
+        field.setForeground(TEXT);
+        field.setCaretColor(TEXT);
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        field.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(BORDER), new EmptyBorder(6, 10, 6, 10)));
+        field.setMaximumSize(new Dimension(280, 38));
+        field.setAlignmentX(LEFT_ALIGNMENT);
+    }
+
+    void attemptLogin() {
+        String user = usernameField.getText().trim();
+        String pass = new String(passwordField.getPassword());
+
+        // Validate username length
+        if (user.length() > 7) {
+            errorLabel.setText("Username must be 7 characters or fewer.");
+            shake();
+            return;
+        }
+
+        // Validate password has at least 1 capital letter
+        boolean hasCapital = pass.chars().anyMatch(Character::isUpperCase);
+        if (!hasCapital) {
+            errorLabel.setText("Password must contain at least 1 capital letter.");
+            shake();
+            return;
+        }
+
+        // Check credentials
+        if (user.equals(ADMIN_USER) && pass.equals(ADMIN_PASS)) {
+            dispose();
+            new HospitalManagementGUI();
+        } else {
+            errorLabel.setText("Incorrect username or password.");
+            passwordField.setText("");
+            shake();
+        }
+    }
+
+    // Shake animation on failed login
+    void shake() {
+        Point origin = getLocation();
+        javax.swing.Timer timer = new javax.swing.Timer(30, null);
+        int[] steps = {-10, 10, -8, 8, -5, 5, -3, 3, 0};
+        final int[] i = {0};
+        timer.addActionListener(e -> {
+            if (i[0] < steps.length) {
+                setLocation(origin.x + steps[i[0]], origin.y);
+                i[0]++;
+            } else {
+                setLocation(origin);
+                timer.stop();
+            }
+        });
+        timer.start();
     }
 }
